@@ -1,0 +1,101 @@
+name: pbt-sentry
+description: Run a property-test command across many seeds, deduplicate failures by normalised signature, and report unique bugs only.
+author: Navid Khan
+branding:
+  icon: bug
+  color: orange
+inputs:
+  command:
+    description: "Property-test command to run once per seed. May contain a {seed} placeholder; the seed is always exported as PBT_SEED and HYPOTHESIS_SEED."
+    required: true
+  runs:
+    description: Number of seeds to run
+    required: false
+    default: "50"
+  seed-start:
+    description: First seed; seeds are seed-start..seed-start+runs-1
+    required: false
+    default: "0"
+  timeout:
+    description: Per-run timeout in seconds
+    required: false
+    default: "120"
+  fail-on-finding:
+    description: "Fail the job when at least one unique finding is produced (true/false)"
+    required: false
+    default: "true"
+  report-name:
+    description: Base name (without extension) for the generated report files
+    required: false
+    default: "pbt-report"
+  python-version:
+    description: Python version used to run pbt-sentry
+    required: false
+    default: "3.12"
+outputs:
+  unique-findings:
+    description: Number of unique failure signatures found
+    value: ${{ steps.hunt.outputs.unique-findings }}
+  failed-runs:
+    description: Number of individual runs that failed
+    value: ${{ steps.hunt.outputs.failed-runs }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install pbt-sentry
+      shell: bash
+      run: python -m pip install "${{ github.action_path }}"
+    - name: Run the hunt
+      id: hunt
+      shell: bash
+      env:
+        PBT_COMMAND: ${{ inputs.command }}
+        PBT_RUNS: ${{ inputs.runs }}
+        PBT_SEED_START: ${{ inputs.seed-start }}
+        PBT_TIMEOUT: ${{ inputs.timeout }}
+        PBT_FAIL_ON_FINDING: ${{ inputs.fail-on-finding }}
+        PBT_REPORT_NAME: ${{ inputs.report-name }}
+      run: |
+        args=(
+          --command "${PBT_COMMAND}"
+          --runs "${PBT_RUNS}"
+          --seed-start "${PBT_SEED_START}"
+          --timeout "${PBT_TIMEOUT}"
+          --report "${PBT_REPORT_NAME}.md"
+          --json "${PBT_REPORT_NAME}.json"
+        )
+        if [[ "${PBT_FAIL_ON_FINDING}" != "true" ]]; then
+          args+=(--no-fail-on-finding)
+        fi
+        set +e
+        pbt-sentry "${args[@]}"
+        status=$?
+        set -e
+        # Expose counts for follow-on steps (e.g. opening an issue).
+        python - <<'PYEOF'
+        import json, os
+        try:
+            with open(os.environ["PBT_REPORT_NAME"] + ".json", encoding="utf-8") as fh:
+                data = json.load(fh)
+            unique = str(data.get("unique_findings", 0))
+            failed = str(data.get("failed_runs", 0))
+        except OSError:
+            unique, failed = "0", "0"
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"unique-findings={unique}\n")
+            fh.write(f"failed-runs={failed}\n")
+        PYEOF
+        # Put the Markdown report in the step summary.
+        cat "${PBT_REPORT_NAME}.md" >> "${GITHUB_STEP_SUMMARY}"
+        exit ${status}
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.report-name }}
+        path: |
+          ${{ inputs.report-name }}.md
+          ${{ inputs.report-name }}.json

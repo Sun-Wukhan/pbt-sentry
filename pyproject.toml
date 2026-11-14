@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pbt-sentry"
+version = "0.1.0"
+description = "Property-based testing bug hunt in a box: run a property-test command across many seeds, deduplicate failures by normalised signature, and produce a minimised bug report."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Navid Khan" }]
+keywords = ["property-based-testing", "hypothesis", "fuzzing", "bug-hunting", "ci"]
+dependencies = []
+
+[project.scripts]
+pbt-sentry = "pbt_sentry.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest", "hypothesis"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

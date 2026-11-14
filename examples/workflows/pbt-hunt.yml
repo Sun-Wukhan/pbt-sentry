@@ -1,0 +1,46 @@
+name: Nightly PBT hunt
+
+# Scheduled property-based bug hunt: run the property tests across many
+# seeds, deduplicate the failures, and open ONE issue per hunt that found
+# unique bugs (never one issue per failing run).
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # nightly, off the hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install example dependencies
+        run: python -m pip install pytest hypothesis
+
+      - name: Run pbt-sentry
+        id: pbt
+        uses: Sun-Wukhan/pbt-sentry@v0.1.0
+        with:
+          command: "python -m pytest examples/python-hypothesis/test_rle.py -q -p no:cacheprovider --hypothesis-seed={seed}"
+          runs: "100"
+          seed-start: "0"
+          timeout: "120"
+          fail-on-finding: "false" # the issue step below is the alert, not a red job
+          report-name: "pbt-report"
+
+      - name: Open an issue for unique findings
+        if: steps.pbt.outputs.unique-findings != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UNIQUE: ${{ steps.pbt.outputs.unique-findings }}
+          FAILED: ${{ steps.pbt.outputs.failed-runs }}
+        run: |
+          gh issue create \
+            --title "pbt-sentry: ${UNIQUE} unique property failure(s) in nightly hunt" \
+            --body-file pbt-report.md \
+            --label "bug,pbt-sentry"
