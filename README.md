@@ -26,6 +26,19 @@ Prometheus):
 4. **Report unique bugs only**, each with its example seed, every seed
    that hit it, and an exact reproduction command.
 
+## Field results
+
+This method has a track record. Run against Argo CD and Prometheus in
+late 2026, it produced eight confirmed findings: three fixes merged
+upstream, two more in review, and one bug fixed upstream following
+our report. The catches include a panic in glob matching, a
+security-relevant AppProject destination deny bypass, and a
+Prometheus duration bug that silently drops a millisecond
+(`1s1ms` evaluating as `1s`).
+
+The full list, with the property that caught each bug and its
+upstream status: [docs/FINDINGS.md](docs/FINDINGS.md).
+
 ## Quick start — CLI
 
 ```bash
