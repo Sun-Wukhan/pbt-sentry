@@ -24,7 +24,7 @@ jobs:
 
       - name: Run pbt-sentry
         id: pbt
-        uses: Sun-Wukhan/pbt-sentry@v0.1.0
+        uses: Sun-Wukhan/pbt-sentry@v0.1.1
         with:
           command: "python -m pytest examples/python-hypothesis/test_rle.py -q -p no:cacheprovider --hypothesis-seed={seed}"
           runs: "100"

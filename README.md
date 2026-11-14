@@ -70,7 +70,7 @@ unparseable command).
 ## Quick start — GitHub Action
 
 ```yaml
-- uses: Sun-Wukhan/pbt-sentry@v0.1.0
+- uses: Sun-Wukhan/pbt-sentry@v0.1.1
   id: pbt
   with:
     command: "python -m pytest tests/test_properties.py -q --hypothesis-seed={seed}"

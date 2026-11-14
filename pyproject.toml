@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pbt-sentry"
-version = "0.1.0"
+version = "0.1.1"
 description = "Property-based testing bug hunt in a box: run a property-test command across many seeds, deduplicate failures by normalised signature, and produce a minimised bug report."
 readme = "README.md"
 requires-python = ">=3.9"
