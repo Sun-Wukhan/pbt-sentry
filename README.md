@@ -6,6 +6,25 @@ Run a property-test command across many seeds, capture every failure,
 deduplicate them by normalised failure signature, and get one minimised
 bug report per *unique* bug — not one per failing run.
 
+## Use it in CI in one minute
+
+```yaml
+name: Property-based bug hunt
+on: [push, pull_request]
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pytest hypothesis
+      - uses: Sun-Wukhan/pbt-sentry@v0.1.1
+        with:
+          command: "python -m pytest tests/test_properties.py -q --hypothesis-seed={seed}"
+          runs: "100"
+```
+
+Locally: `pip install pbt-sentry` (once published), then run `pbt-sentry --command "python -m pytest tests/test_properties.py -q --hypothesis-seed={seed}" --runs 100`.
+
 ## The method
 
 This packages the workflow behind a series of real property-based bug
